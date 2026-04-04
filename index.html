@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ramanavami Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{margin:0;font-family:'Segoe UI';background:#f1f5f9}
+.header{background:white;padding:15px;text-align:center;font-size:20px;font-weight:600;border-bottom:1px solid #ddd;position:relative;}
+.admin-btn{position:absolute;right:15px;top:12px;padding:6px 12px;border:1px solid #ccc;background:white;cursor:pointer;}
+.container{padding:15px;max-width:1200px;margin:auto}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;}
+.card{background:white;padding:15px;border-radius:10px;border:1px solid #ddd}
+.section{background:white;margin-top:15px;padding:15px;border-radius:10px;border:1px solid #ddd}
+table{width:100%;border-collapse:collapse}
+th{background:#f9fafb;padding:10px}
+td{padding:10px;border-top:1px solid #eee}
+.overdue{background:#fee2e2;color:red}
+.paid{color:green;font-weight:bold}
+.hidden{display:none}
+#toast{position:fixed;top:20px;right:20px;padding:10px 15px;border-radius:6px;color:white;display:none;font-weight:bold;}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+🙏 శ్రీ రామనవమి ఫండ్ ట్రాకింగ్
+<button class="admin-btn" onclick="showLogin()">Admin</button>
+</div>
+
+<div id="toast"></div>
+
+<!-- LOGIN -->
+<div id="loginPage" class="hidden container">
+<h3>Admin Login</h3>
+<input id="userid"><br>
+<input id="password" type="password"><br>
+<button onclick="login()">Login</button>
+</div>
+
+<!-- USER -->
+<div id="userPage" class="container">
+
+<input id="search" placeholder="Search Name / Phone" onkeyup="render()" style="width:100%;padding:10px;margin-bottom:10px">
+
+<div class="cards">
+<div class="card"><h4>Total Fund</h4><p id="fund"></p></div>
+<div class="card"><h4>Given</h4><p id="given"></p></div>
+<div class="card"><h4>Pending Amount</h4><p id="pendingAmt"></p></div>
+<div class="card"><h4>Interest</h4><p id="interest"></p></div>
+<div class="card"><h4>Expected</h4><p id="expected"></p></div>
+<div class="card"><h4>Balance</h4><p id="balance"></p></div>
+<div class="card"><h4>Paid</h4><p id="paidCount"></p></div>
+<div class="card"><h4>Pending</h4><p id="pendingCount"></p></div>
+</div>
+
+<div class="section">
+<canvas id="chart"></canvas>
+<canvas id="barChart"></canvas>
+</div>
+
+<div class="section">
+<table>
+<tr>
+<th>Name</th><th>Phone</th><th>Amount</th><th>Return</th>
+<th>Loan Date</th><th>Due</th><th>Days</th><th>Status</th>
+</tr>
+<tbody id="table"></tbody>
+</table>
+</div>
+
+</div>
+
+<!-- ADMIN -->
+<div id="adminPage" class="container hidden">
+
+<h3>Add Loan</h3>
+<input id="aname" placeholder="Name">
+<input id="aphone" placeholder="Phone">
+<input id="aamount" type="number" placeholder="Amount">
+<input id="adate" type="date">
+<button onclick="addLoan()">Add</button>
+<button onclick="resetData()">Reset All</button>
+
+<h3>Manage</h3>
+<table>
+<tr><th>Name</th><th>Phone</th><th>Amount</th><th>Status</th><th>Action</th></tr>
+<tbody id="adminTable"></tbody>
+</table>
+
+</div>
+
+<script>
+
+const USER="admin";
+const PASS="1234";
+
+// 🔥 GOOGLE SHEET API
+const API_URL = "https://script.google.com/macros/s/AKfycbxUJlHW4SekB7ZxD-m5BaABYGKvf1tvHY7y1NoFjhRnGwRD6gTTcLnxfLkcCfiEsFCR/exec";
+
+let loans = [];
+let pieChart, barChart;
+
+// 🔥 LOAD DATA FROM SHEET
+async function loadData(){
+ let res = await fetch(API_URL);
+ let data = await res.json();
+
+ loans = data.slice(1).map(r=>({
+  name:r[0],
+  phone:r[1],
+  amount:+r[2],
+  interestAmt:+r[3],
+  totalReturn:+r[4],
+  loanDate:r[5],
+  dueDate:r[6],
+  status:r[7],
+  paidDate:""
+ }));
+
+ render();
+ renderAdmin();
+}
+
+// 🔥 SAVE DATA TO SHEET
+async function saveToSheet(loan){
+ await fetch(API_URL,{
+  method:"POST",
+  body: JSON.stringify({
+    name:loan.name,
+    phone:loan.phone,
+    amount:loan.amount,
+    interest:loan.interestAmt,
+    total:loan.totalReturn,
+    loanDate:loan.loanDate,
+    dueDate:loan.dueDate,
+    status:loan.status
+  })
+ });
+}
+
+// UI FUNCTIONS
+function showToast(msg,color="#22c55e"){
+ let t=document.getElementById("toast");
+ t.innerText=msg;
+ t.style.background=color;
+ t.style.display="block";
+ setTimeout(()=>t.style.display="none",2000);
+}
+
+function showLogin(){
+ userPage.classList.add("hidden");
+ loginPage.classList.remove("hidden");
+}
+
+function login(){
+ if(userid.value===USER && password.value===PASS){
+  loginPage.classList.add("hidden");
+  adminPage.classList.remove("hidden");
+  renderAdmin();
+ }
+}
+
+// 🔥 ADD LOAN → SAVE TO DATABASE
+function addLoan(){
+
+ let name=aname.value;
+ let phone=aphone.value;
+ let amount=+aamount.value;
+ let dateValue=adate.value;
+
+ if(!name||!phone||!amount||!dateValue){
+  showToast("Fill all fields","red"); return;
+ }
+
+ let loanDate=new Date(dateValue);
+ let due=new Date(loanDate);
+ due.setMonth(due.getMonth()+3);
+
+ let interestAmt=(amount/1000)*60;
+ let totalReturn=amount+interestAmt;
+
+ let newLoan={
+  name,phone,amount,interestAmt,totalReturn,
+  loanDate: loanDate.toISOString(),
+  dueDate: due.toISOString(),
+  status:"Pending"
+ };
+
+ // 🔥 SAVE TO GOOGLE SHEET
+ saveToSheet(newLoan);
+
+ showToast("Saved to Database ✅");
+
+ setTimeout(loadData,1000); // reload data
+}
+
+// ⚠️ UI ONLY (NOT DB SYNC)
+function markPaid(i){
+ loans[i].status="Paid";
+ loans[i].paidDate=new Date().toLocaleDateString();
+ render(); renderAdmin();
+}
+
+function deleteLoan(i){
+ loans.splice(i,1);
+ render(); renderAdmin();
+ showToast("Deleted (UI only)","red");
+}
+
+function resetData(){
+ loans=[];
+ render(); renderAdmin();
+}
+
+// 🔥 MAIN RENDER
+function render(){
+
+ let search=document.getElementById("search").value.toLowerCase();
+
+ let given=0,interest=0,pendingAmt=0,expected=0;
+ let paidCount=0,pendingCount=0;
+ let paidTotal=0,pendingTotal=0;
+
+ table.innerHTML="";
+
+ loans.forEach(l=>{
+
+  if(search && !l.name.toLowerCase().includes(search) && !l.phone.includes(search)) return;
+
+  let today=new Date();
+  let due=new Date(l.dueDate);
+  let days=Math.ceil((due-today)/(1000*60*60*24));
+
+  let isOverdue = days < 0 && l.status==="Pending";
+
+  if(l.status==="Pending"){
+    given+=l.amount;
+    pendingAmt+=l.totalReturn;
+    pendingCount++;
+    pendingTotal+=l.totalReturn;
+  }
+
+  if(l.status==="Paid"){
+    interest+=l.interestAmt;
+    paidCount++;
+    paidTotal+=l.totalReturn;
+  }
+
+  expected += l.totalReturn;
+
+  table.innerHTML+=`
+  <tr class="${isOverdue?'overdue':''}">
+  <td>${l.name}</td>
+  <td>${l.phone}</td>
+  <td>${l.amount}</td>
+  <td>${l.totalReturn}</td>
+  <td>${new Date(l.loanDate).toLocaleDateString()}</td>
+  <td>${new Date(l.dueDate).toLocaleDateString()}</td>
+  <td>${days<0?Math.abs(days)+' Late':days}</td>
+  <td>${isOverdue?'Overdue':l.status}</td>
+  </tr>`;
+ });
+
+ let totalFund=50000+interest;
+ let balance=totalFund-given;
+
+ document.getElementById("fund").innerText="₹"+totalFund;
+ document.getElementById("given").innerText="₹"+given;
+ document.getElementById("pendingAmt").innerText="₹"+pendingAmt;
+
+ document.getElementById("interest").innerText="₹"+interest;
+
+ document.getElementById("expected").innerText="₹"+expected;
+ document.getElementById("balance").innerText="₹"+balance;
+
+ document.getElementById("paidCount").innerText=paidCount+" (₹"+paidTotal+")";
+ document.getElementById("pendingCount").innerText=pendingCount+" (₹"+pendingTotal+")";
+
+ drawCharts(given,balance);
+}
+
+// CHARTS
+function drawCharts(given,balance){
+
+ if(pieChart) pieChart.destroy();
+ if(barChart) barChart.destroy();
+
+ pieChart=new Chart(document.getElementById("chart"),{
+  type:'pie',
+  data:{labels:["Given","Balance"],datasets:[{data:[given,balance]}]}
+ });
+
+ barChart=new Chart(document.getElementById("barChart"),{
+  type:'bar',
+  data:{
+   labels:loans.map(l=>l.name),
+   datasets:[{label:"Loan",data:loans.map(l=>l.amount)}]
+  }
+ });
+}
+
+// ADMIN
+function renderAdmin(){
+ adminTable.innerHTML="";
+ loans.forEach((l,i)=>{
+  adminTable.innerHTML+=`
+  <tr>
+  <td>${l.name}</td>
+  <td>${l.phone}</td>
+  <td>${l.amount}</td>
+  <td>${l.status}</td>
+  <td>
+    <button onclick="markPaid(${i})">Paid</button>
+    <button onclick="deleteLoan(${i})">Delete</button>
+  </td>
+  </tr>`;
+ });
+}
+
+// 🔥 LOAD DATA ON START
+loadData();
+
+</script>
+
+</body>
+</html>
