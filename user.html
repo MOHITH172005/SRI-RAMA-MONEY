@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>User Login</title>
+
+  <style>
+    body{
+      font-family: Arial;
+      background:#f4f7fb;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+    }
+
+    .box{
+      background:white;
+      padding:30px;
+      border-radius:12px;
+      width:320px;
+      text-align:center;
+      box-shadow:0 8px 20px rgba(0,0,0,0.1);
+    }
+
+    input{
+      width:100%;
+      padding:10px;
+      margin:8px 0;
+      border-radius:8px;
+      border:1px solid #ccc;
+    }
+
+    button{
+      width:100%;
+      padding:10px;
+      border:none;
+      border-radius:8px;
+      background:#22c55e;
+      color:white;
+      cursor:pointer;
+    }
+
+    button:disabled{
+      background:#94a3b8;
+      cursor:not-allowed;
+    }
+
+    .link{
+      color:#3b82f6;
+      cursor:pointer;
+      margin-top:10px;
+      font-size:14px;
+    }
+
+    /* 🔥 LOADING */
+    #loading{
+      display:none;
+      margin-top:10px;
+    }
+
+    .spinner{
+      border:4px solid #eee;
+      border-top:4px solid #22c55e;
+      border-radius:50%;
+      width:30px;
+      height:30px;
+      margin:auto;
+      animation:spin 1s linear infinite;
+    }
+
+    @keyframes spin{
+      0%{ transform:rotate(0deg); }
+      100%{ transform:rotate(360deg); }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <h2 id="title">Login</h2>
+
+  <input id="name" placeholder="Name" style="display:none">
+  <input id="mobile" placeholder="Mobile Number">
+  <input id="head" placeholder="Head of Family" style="display:none">
+  <input type="password" id="pass" placeholder="Password">
+  <input type="password" id="cpass" placeholder="Confirm Password" style="display:none">
+
+  <button id="mainBtn" onclick="submitForm()">Login</button>
+
+  <p class="link" onclick="toggle()">Don't have an account? Create one</p>
+
+  <!-- 🔥 LOADING -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Processing...</p>
+  </div>
+
+</div>
+
+<script>
+
+let isLogin = true;
+
+let API = "https://script.google.com/macros/s/AKfycbzpxTxwbP9KAC7KIYMCzTagAAabllDmCEsjJb1tUTdhYTeDRonF9OdyjYJ9olOXVVa_/exec";
+
+// 🔄 TOGGLE LOGIN/SIGNUP
+function toggle(){
+  isLogin = !isLogin;
+
+  document.getElementById("title").innerText = isLogin ? "Login" : "Create Account";
+  document.getElementById("mainBtn").innerText = isLogin ? "Login" : "Create Account";
+
+  document.getElementById("name").style.display = isLogin?"none":"block";
+  document.getElementById("head").style.display = isLogin?"none":"block";
+  document.getElementById("cpass").style.display = isLogin?"none":"block";
+}
+
+// 🔥 LOADING CONTROL
+function showLoading(){
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("mainBtn").disabled = true;
+}
+
+function hideLoading(){
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("mainBtn").disabled = false;
+}
+
+// 🚀 MAIN FUNCTION
+async function submitForm(){
+
+  let mobile = document.getElementById("mobile").value.trim();
+  let pass = document.getElementById("pass").value.trim();
+
+  if(!mobile || !pass){
+    alert("Enter all details");
+    return;
+  }
+
+  // 🔐 LOGIN
+  if(isLogin){
+
+    showLoading();
+
+    try{
+      let res = await fetch(`${API}?type=login&mobile=${mobile}&pass=${pass}`);
+      let text = await res.text();
+
+      if(text === "success"){
+        localStorage.setItem("currentUser", mobile);
+        window.location.href = "user-dashboard.html";
+      }else{
+        alert("Invalid Login ❌");
+      }
+
+    }catch(e){
+      alert("Network error ❌");
+    }
+
+    hideLoading();
+  }
+
+  // 🆕 SIGNUP
+  else{
+
+    let name = document.getElementById("name").value.trim();
+    let head = document.getElementById("head").value.trim();
+    let cpass = document.getElementById("cpass").value.trim();
+
+    if(!name || !head){
+      alert("Fill all fields");
+      return;
+    }
+
+    if(pass !== cpass){
+      alert("Passwords not match ❌");
+      return;
+    }
+
+    showLoading();
+
+    try{
+      let url = `${API}?type=signup&name=${encodeURIComponent(name)}&mobile=${mobile}&head=${encodeURIComponent(head)}&pass=${pass}`;
+
+      let res = await fetch(url);
+      let text = await res.text();
+
+      if(text === "exists"){
+        alert("Account already exists ❌");
+      }else if(text === "created"){
+        alert("Account Created ✅");
+        toggle();
+      }else{
+        alert("Error try again");
+      }
+
+    }catch(e){
+      alert("Network error ❌");
+    }
+
+    hideLoading();
+  }
+}
+
+</script>
+
+</body>
+</html>
