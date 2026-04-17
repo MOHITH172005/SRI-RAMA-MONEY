@@ -259,10 +259,18 @@ canvas{
   <div class="table-container">
     <table>
       <thead>
-        <tr>
-          <th>#</th><th>Name</th><th>Mobile</th><th>Amount</th><th>Surety</th><th>Status</th>
-        </tr>
-      </thead>
+  <tr>
+    <th>#</th>
+    <th>Name</th>
+    <th>Mobile</th>
+    <th>Amount</th>
+    <th>Surety</th>
+    <th>Status</th>
+    <th>Request Time</th>
+    <th>Approved Time</th>
+    <th>Action</th>
+  </tr>
+</thead>
       <tbody id="requestTable"></tbody>
     </table>
   </div>
@@ -407,6 +415,11 @@ function loadRequests(){
   let table=document.getElementById("requestTable");
   table.innerHTML="";
 
+  if(data.length === 0){
+    table.innerHTML = `<tr><td colspan="9">No Requests</td></tr>`;
+    return;
+  }
+
   data.forEach((r,i)=>{
     table.innerHTML+=`
     <tr>
@@ -416,10 +429,44 @@ function loadRequests(){
       <td>₹${r.amount}</td>
       <td>${r.sname||"-"}</td>
       <td>${r.status}</td>
+
+      <td>${r.requestTime || "-"}</td>
+      <td>${r.approvedTime || "-"}</td>
+
+      <td>
+        ${
+          r.status==="pending"
+          ? `
+            <button onclick="updateStatus(${r.row},'accepted')" style="background:green;">Accept</button>
+            <button onclick="updateStatus(${r.row},'rejected')" style="background:red;">Reject</button>
+          `
+          : "✔"
+        }
+      </td>
     </tr>`;
   });
 }
 
+async function updateStatus(row,status){
+
+  showLoader();
+
+  try{
+    let res = await fetch(`${API}?type=updateStatus&row=${row}&status=${status}`);
+    let text = await res.text();
+
+    if(text === "updated"){
+      alert("Updated ✅");
+      fetchData(); // refresh full data
+    }else{
+      alert("Error ❌");
+    }
+  }catch(e){
+    alert("Error ❌");
+  }
+
+  hideLoader();
+}
 //////////////////////////////////////////////////////////
 // 📊 PIE CHART (3D EFFECT)
 //////////////////////////////////////////////////////////
