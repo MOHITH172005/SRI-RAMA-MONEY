@@ -158,7 +158,7 @@
 <script>
 let userData = {};
 // ✅ API
-let API = "https://script.google.com/macros/s/AKfycbzpxTxwbP9KAC7KIYMCzTagAAabllDmCEsjJb1tUTdhYTeDRonF9OdyjYJ9olOXVVa_/exec";
+let API = "https://script.google.com/macros/s/AKfycbwdM3SK9_iQGwtjyfoV4yOkqHQBcy7GbQwfMISzgc6aZlUaR04KT7wETTjv6yCZqTrZ/exec";
 
 let mobile = localStorage.getItem("currentUser");
 
@@ -255,7 +255,7 @@ function renderLoans(loans){
           <td>₹${m.amount.toFixed(0)}</td>
           <td>${m.type}</td>
           <td class="pending">pending</td>
-          <td><button onclick="payReal(${i})">Pay</button></td>
+          <td><button onclick="payUPI(${m.amount})">Pay</button></td>
         </tr>
       `;
     });
@@ -400,6 +400,19 @@ async function submitRequest(){
     alert("Network Error ❌");
   }
 }
+
+function payUPI(amount){
+
+  let upiID = "pyaswanth055@axl";   // 🔥 your UPI ID
+  let name = "P YASWANTH REDDY";
+
+  let upiLink = `upi://pay?pa=${upiID}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR`;
+
+  // 👉 This opens ANY UPI app (GPay / PhonePe / Paytm)
+  window.location.href = upiLink;
+}
+
+
 
 // 🔐 LOGOUT
 function logout(){
