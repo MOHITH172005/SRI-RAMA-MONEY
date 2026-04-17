@@ -421,6 +421,16 @@ function loadRequests(){
   }
 
   data.forEach((r,i)=>{
+
+    let actionSymbol = "-"; // default pending
+
+    if(r.status === "accepted"){
+      actionSymbol = "✔";
+    }
+    else if(r.status === "rejected"){
+      actionSymbol = "✖";
+    }
+
     table.innerHTML+=`
     <tr>
       <td>${i+1}</td>
@@ -433,15 +443,8 @@ function loadRequests(){
       <td>${r.requestTime || "-"}</td>
       <td>${r.approvedTime || "-"}</td>
 
-      <td>
-        ${
-          r.status==="pending"
-          ? `
-            <button onclick="updateStatus(${r.row},'accepted')" style="background:green;">Accept</button>
-            <button onclick="updateStatus(${r.row},'rejected')" style="background:red;">Reject</button>
-          `
-          : "✔"
-        }
+      <td style="font-size:18px; font-weight:bold;">
+        ${actionSymbol}
       </td>
     </tr>`;
   });
