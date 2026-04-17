@@ -153,10 +153,61 @@
     <button onclick="submitRequest()" style="background:#22c55e;margin-top:10px;">Submit</button>
     <button onclick="closeRequest()" style="background:gray;margin-top:10px;">Close</button>
   </div>
+<!-- 💳 PAYMENT POPUP -->
+<div id="paymentPopup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000000aa; justify-content:center; align-items:center;">
+
+  <div style="background:white; padding:20px; border-radius:12px; width:320px; text-align:center;">
+
+    <h3>Select Payment Method</h3>
+
+    <button onclick="payViaUPI()" style="background:#22c55e; width:100%; margin-top:10px;">
+      Pay via UPI (GPay / PhonePe)
+    </button>
+
+    <button onclick="showBankDetails()" style="background:#3b82f6; width:100%; margin-top:10px;">
+      Pay via Bank
+    </button>
+
+    <button onclick="closePayment()" style="background:gray; width:100%; margin-top:10px;">
+      Close
+    </button>
+
+    <!-- 🏦 BANK DETAILS -->
+    <div id="bankDetails" style="display:none; margin-top:15px; text-align:left; font-size:14px;">
+
+      <p><b>Account Name:</b> VALASAREDDY MOHITH KUMAR REDDY</p>
+
+      <p>
+        <b>Account Number:</b> 033325221727314  
+        <button onclick="copyText('033325221727314')">Copy</button>
+      </p>
+
+      <p>
+        <b>IFSC:</b> NESF0000333  
+        <button onclick="copyText('NESF0000333')">Copy</button>
+      </p>
+
+      <p>
+        <b>Alt IFSC:</b> NESF0000096  
+        <button onclick="copyText('NESF0000096')">Copy</button>
+      </p>
+
+      <p><b>Bank:</b> Slice Small Finance Bank</p>
+      <p><b>Branch:</b> Koramangala, Bangalore</p>
+
+      <p style="color:red; margin-top:10px;">
+        If UPI is not working, please pay via bank transfer.
+      </p>
+
+    </div>
+
+  </div>
+</div>
 </div>
 
 <script>
 let userData = {};
+let currentAmount = 0;
 // ✅ API
 let API = "https://script.google.com/macros/s/AKfycbwdM3SK9_iQGwtjyfoV4yOkqHQBcy7GbQwfMISzgc6aZlUaR04KT7wETTjv6yCZqTrZ/exec";
 
@@ -402,18 +453,28 @@ async function submitRequest(){
 }
 
 function payUPI(amount){
+  currentAmount = amount;
+  document.getElementById("paymentPopup").style.display = "flex";
+}
+function payViaUPI(){
 
-  let upiID = "pyaswanth055@axl";   // 🔥 your UPI ID
-  let name = "P YASWANTH REDDY";
+  let upiID = "9951994651-4@ybl";
+  let name = "VALASAREDDY MOHITH KUMAR REDDY";
 
-  let upiLink = `upi://pay?pa=${upiID}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR`;
+  let upiLink = `upi://pay?pa=${upiID}&pn=${encodeURIComponent(name)}&am=${currentAmount}&cu=INR`;
 
-  // 👉 This opens ANY UPI app (GPay / PhonePe / Paytm)
   window.location.href = upiLink;
 }
-
-
-
+function showBankDetails(){
+  document.getElementById("bankDetails").style.display = "block";
+}
+function closePayment(){
+  document.getElementById("paymentPopup").style.display = "none";
+}
+function copyText(text){
+  navigator.clipboard.writeText(text);
+  alert("Copied: " + text);
+}
 // 🔐 LOGOUT
 function logout(){
   localStorage.removeItem("currentUser");
