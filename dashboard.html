@@ -565,10 +565,39 @@ window.onload=function(){
 
 };
 function closeNote(){
-  document.getElementById("loginNote").style.display = "none";
+  document.getElementById("loginNote").style.display="none";
+}
+
+function changeLang(lang){
+
+  let title = document.getElementById("title");
+  let content = document.getElementById("content");
+
+  if(lang === "english"){
+
+    title.innerText = "🔐 Login Information";
+
+    content.innerHTML = `
+      📱 Login: User Mobile Number <br><br>
+      🔑 Password:<br>
+      • If created by Admin → 123456 <br>
+      • If created by User → Your set password
+    `;
+
+  }else{
+
+    title.innerText = "🔐 లాగిన్ సమాచారం";
+
+    content.innerHTML = `
+      📱 లాగిన్: యూజర్ మొబైల్ నంబర్ <br><br>
+      🔑 పాస్‌వర్డ్:<br>
+      • అడ్మిన్ క్రియేట్ చేస్తే → 123456 <br>
+      • యూజర్ స్వయంగా క్రియేట్ చేస్తే → మీరు పెట్టిన పాస్‌వర్డ్
+    `;
+  }
 }
 </script>
-<div id="loginNote" style="
+<div id="loginNote" style="
   position:fixed;
   top:0;
   left:0;
@@ -587,24 +616,26 @@ function closeNote(){
     border-radius:15px;
     max-width:400px;
     text-align:center;
-    box-shadow:0 10px 30px rgba(0,0,0,0.2);
   ">
 
-    <h3 style="margin-bottom:10px;">🔐 Login Info</h3>
+    <!-- 🌐 Language Switch -->
+    <select onchange="changeLang(this.value)" style="margin-bottom:10px; padding:5px;">
+      <option value="telugu">తెలుగు</option>
+      <option value="english">English</option>
+    </select>
 
-    <p style="font-size:14px; color:#555; line-height:1.6;">
-      <b>User Login</b><br><br>
+    <h3 id="title">🔐 లాగిన్ సమాచారం</h3>
 
-      📱 <b>Login:</b> User Mobile Number<br><br>
-
-      🔑 <b>Password:</b><br>
-      • If loan created by <b>Admin</b> → <b>123456</b><br>
-      • If user created own account → Use <b>your set password</b>
+    <p id="content" style="line-height:1.6;">
+      📱 లాగిన్: యూజర్ మొబైల్ నంబర్ <br><br>
+      🔑 పాస్‌వర్డ్:<br>
+      • అడ్మిన్ క్రియేట్ చేస్తే → 123456 <br>
+      • యూజర్ స్వయంగా క్రియేట్ చేస్తే → మీరు పెట్టిన పాస్‌వర్డ్
     </p>
 
     <button onclick="closeNote()" style="
-      margin-top:15px;
-      padding:10px 20px;
+      margin-top:10px;
+      padding:8px 18px;
       border:none;
       border-radius:8px;
       background:#3b82f6;
@@ -613,6 +644,7 @@ function closeNote(){
     ">OK</button>
 
   </div>
+</div>
 </div>
 </body>
 </html>
