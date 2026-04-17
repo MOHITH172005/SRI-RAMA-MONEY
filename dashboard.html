@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
+
   <title>Dashboard</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
+
+     
     *{
       margin:0;
       padding:0;
@@ -108,10 +112,99 @@
       font-size:22px;
       color:#3b82f6;
     }
+    table{
+    min-width:1100px;
+    }
+
+    th, td{
+    white-space:nowrap;
+    }
+    .table-container{
+    overflow-x:auto;
+    width:100%;
+    }
+
+table{
+  min-width:700px; /* adjust based on columns */
+}
+
+th, td{
+  white-space:nowrap;
+}
+canvas{
+  filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.2));
+}
+/* 🔥 Splash Screen */
+#splash{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+
+  color:white;
+  text-align:center;
+  z-index:99999;
+
+  animation: fadeIn 1s ease-in-out;
+}
+
+/* Title */
+#splash h1{
+  font-size:32px;
+  font-weight:600;
+  margin-bottom:10px;
+  letter-spacing:1px;
+}
+
+/* Subtitle */
+#splash h2{
+  font-size:20px;
+  font-weight:400;
+  opacity:0.9;
+}
+
+/* 🔄 Loading Spinner */
+.loader{
+  margin-top:25px;
+  width:40px;
+  height:40px;
+  border:4px solid rgba(255,255,255,0.3);
+  border-top:4px solid white;
+  border-radius:50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Fade Animation */
+@keyframes fadeIn{
+  from{opacity:0;}
+  to{opacity:1;}
+}
+
+/* Spinner Animation */
+@keyframes spin{
+  0%{transform:rotate(0deg);}
+  100%{transform:rotate(360deg);}
+}
   </style>
 </head>
 
 <body>
+<!-- ✅ SPLASH -->
+<div id="splash">
+  <h1>🙏 Welcome to</h1>
+  <h2>Valasareddygaripalli Temple Treasury Accounts</h2>
+</div>
+
+<!-- ✅ MAIN CONTENT -->
+<div id="mainContent" style="display:none;">
 
 <div class="header">
   <div>
@@ -136,33 +229,44 @@
   </div>
 </div>
 
+<div class="card">
+  <h3>📊 Financial Overview</h3>
+  <canvas id="financeChart" height="100"></canvas>
+</div>
+
 <!-- 📋 LOANS -->
 <div class="card">
   <h3>Loan Records</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th><th>Name</th><th>Phone</th><th>Amount</th><th>Interest</th>
-        <th>M1</th><th>M2</th><th>M3</th><th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="table"></tbody>
-  </table>
-</div>
 
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Name</th><th>Phone</th><th>Amount</th><th>Interest</th>
+          <th>M1</th><th>M2</th><th>M3</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="table"></tbody>
+    </table>
+  </div>
+
+</div>
 <!-- 📩 REQUESTS -->
 <div class="card">
   <h3>Loan Requests</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th><th>Name</th><th>Mobile</th><th>Amount</th><th>Surety</th><th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="requestTable"></tbody>
-  </table>
-</div>
 
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Name</th><th>Mobile</th><th>Amount</th><th>Surety</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="requestTable"></tbody>
+    </table>
+  </div>
+
+</div>
 </div>
 
 <div id="globalLoader">⏳ Loading...</div>
@@ -175,20 +279,39 @@ function goAdmin(){ window.location="admin.html"; }
 function showLoader(){ globalLoader.style.display="flex"; }
 function hideLoader(){ globalLoader.style.display="none"; }
 
-let API="https://script.google.com/macros/s/AKfycbzpxTxwbP9KAC7KIYMCzTagAAabllDmCEsjJb1tUTdhYTeDRonF9OdyjYJ9olOXVVa_/exec";
+let API="https://script.google.com/macros/s/AKfycbwdM3SK9_iQGwtjyfoV4yOkqHQBcy7GbQwfMISzgc6aZlUaR04KT7wETTjv6yCZqTrZ/exec";
+let GLOBAL_DATA = [];
 
+//////////////////////////////////////////////////////////
+// 🚀 FETCH DATA (ONLY ONCE)
+//////////////////////////////////////////////////////////
+async function fetchData(){
+  try{
+    showLoader();
+
+    let res = await fetch(`${API}?type=getRequests&mobile=all`);
+    GLOBAL_DATA = await res.json();
+
+    loadStats();
+    render();
+    loadRequests();
+    loadChart();
+
+    hideLoader();
+
+  }catch(e){
+    alert("Error loading data");
+    console.log(e);
+  }
+}
 
 //////////////////////////////////////////////////////////
 // 📊 LOAD STATS
 //////////////////////////////////////////////////////////
-async function loadStats(){
-
-  showLoader();
+function loadStats(){
 
   let TREASURY=93000;
-
-  let res=await fetch(`${API}?type=getRequests&mobile=all`);
-  let data=await res.json();
+  let data = GLOBAL_DATA;
 
   let loans = data.filter(l => 
     (l.status || "").toLowerCase().trim() === "accepted"
@@ -227,22 +350,17 @@ async function loadStats(){
   document.getElementById("totalInterest").innerText = "₹"+totalInt;
   document.getElementById("remaining").innerText = "₹"+remaining;
   document.getElementById("totalValue").innerText = "₹"+totalValue;
-
-  hideLoader();
 }
 
 //////////////////////////////////////////////////////////
 // 📋 RENDER LOANS
 //////////////////////////////////////////////////////////
-async function render(){
-
-  showLoader();
+function render(){
 
   let table=document.getElementById("table");
   table.innerHTML="";
 
-  let res=await fetch(`${API}?type=getRequests&mobile=all`);
-  let data=await res.json();
+  let data = GLOBAL_DATA;
 
   let loans = data.filter(l => 
     (l.status || "").toLowerCase().trim() === "accepted"
@@ -250,7 +368,6 @@ async function render(){
 
   if(loans.length===0){
     table.innerHTML=`<tr><td colspan="9">No Loan Data</td></tr>`;
-    hideLoader();
     return;
   }
 
@@ -277,17 +394,14 @@ async function render(){
       <td>${status}</td>
     </tr>`;
   });
-
-  hideLoader();
 }
 
 //////////////////////////////////////////////////////////
 // 📩 LOAD REQUESTS
 //////////////////////////////////////////////////////////
-async function loadRequests(){
+function loadRequests(){
 
-  let res=await fetch(`${API}?type=getRequests&mobile=all`);
-  let data=await res.json();
+  let data = GLOBAL_DATA;
 
   let table=document.getElementById("requestTable");
   table.innerHTML="";
@@ -305,15 +419,102 @@ async function loadRequests(){
   });
 }
 
+//////////////////////////////////////////////////////////
+// 📊 PIE CHART (3D EFFECT)
+//////////////////////////////////////////////////////////
+function loadChart(){
+
+  let data = GLOBAL_DATA;
+
+  let loans = data.filter(l => 
+    (l.status || "").toLowerCase().trim() === "accepted"
+  );
+
+  let totalPrincipal = 0;
+  let totalInterest = 0;
+  let totalCollected = 0;
+  let totalPending = 0;
+
+  loans.forEach(l=>{
+    let amount = Number(l.amount || 0);
+    let interest = Math.round((amount*2)/100);
+
+    let m1=l.m1||"pending";
+    let m2=l.m2||"pending";
+    let m3=l.m3||"pending";
+
+    totalPrincipal += amount;
+    totalInterest += interest * 3;
+
+    // ✅ Only collected
+    if(m1==="paid") totalCollected += interest;
+    if(m2==="paid") totalCollected += interest;
+    if(m3==="paid") totalCollected += interest;
+  });
+
+  // ✅ NEW LOGIC
+  let totalGiven = totalPrincipal + totalInterest;
+  totalPending = totalGiven - totalCollected;
+
+  let ctx = document.getElementById('financeChart').getContext('2d');
+
+  if(window.myChart){
+    window.myChart.destroy();
+  }
+
+  window.myChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: ['Principal','Interest','Collected','Pending'],
+      datasets: [{
+        data: [
+          totalPrincipal,
+          totalInterest,
+          totalCollected,
+          totalPending
+        ],
+        backgroundColor: [
+          '#3b82f6',
+          '#22c55e',
+          '#f59e0b',
+          '#ef4444' // 🔴 Pending
+        ],
+        borderColor: '#fff',
+        borderWidth: 2,
+        hoverOffset: 20
+      }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }
+  });
+}
+
+//////////////////////////////////////////////////////////
+// 🔐 LOGOUT
+//////////////////////////////////////////////////////////
 function logout(){
   localStorage.removeItem("admin");
   window.location="dashboard.html";
 }
 
+//////////////////////////////////////////////////////////
+// 🚀 START
+//////////////////////////////////////////////////////////
 window.onload=function(){
-  loadStats();
-  render();
-  loadRequests();
+
+  // Show splash first
+  setTimeout(()=>{
+    document.getElementById("splash").style.display="none";
+    document.getElementById("mainContent").style.display="block";
+
+    fetchData(); // ✅ load AFTER splash
+  }, 3000);
+
 };
 
 </script>
