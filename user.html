@@ -1,476 +1,213 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>User Dashboard</title>
+  <title>User Login</title>
 
   <style>
     body{
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg,#667eea,#764ba2);
-      margin:0;
-      color:#1e293b;
-    }
-
-    .header{
+      font-family: Arial;
+      background:#f4f7fb;
       display:flex;
-      justify-content:space-between;
-      padding:20px 30px;
-      background:white;
-      box-shadow:0 4px 20px rgba(0,0,0,0.1);
-      border-radius:0 0 20px 20px;
-    }
-
-    .cards{
-      display:flex;
-      gap:20px;
-      padding:20px;
-      flex-wrap:wrap;
-    }
-
-    .card{
-      background:white;
-      padding:20px;
-      border-radius:15px;
-      flex:1;
-      min-width:180px;
-      box-shadow:0 10px 25px rgba(0,0,0,0.1);
+      justify-content:center;
+      align-items:center;
+      height:100vh;
     }
 
     .box{
-      margin:20px;
       background:white;
-      padding:20px;
-      border-radius:15px;
-      box-shadow:0 10px 25px rgba(0,0,0,0.1);
+      padding:30px;
+      border-radius:12px;
+      width:320px;
+      text-align:center;
+      box-shadow:0 8px 20px rgba(0,0,0,0.1);
     }
 
-    table{
+    input{
       width:100%;
-      border-collapse:collapse;
-    }
-
-    th,td{
       padding:10px;
-      border-top:1px solid #eee;
+      margin:8px 0;
+      border-radius:8px;
+      border:1px solid #ccc;
     }
-
-    .paid{ color:#22c55e; font-weight:bold; }
-    .pending{ color:#ef4444; font-weight:bold; }
 
     button{
-      padding:6px 12px;
+      width:100%;
+      padding:10px;
       border:none;
-      border-radius:6px;
-      background:#ef4444;
+      border-radius:8px;
+      background:#22c55e;
       color:white;
       cursor:pointer;
     }
 
-    button:hover{
-      background:#dc2626;
+    button:disabled{
+      background:#94a3b8;
+      cursor:not-allowed;
     }
 
-    /* 🔥 POPUP STYLE */
-    #popup{
+    .link{
+      color:#3b82f6;
+      cursor:pointer;
+      margin-top:10px;
+      font-size:14px;
+    }
+
+    /* 🔥 LOADING */
+    #loading{
       display:none;
-      position:fixed;
-      top:0;
-      left:0;
-      width:100%;
-      height:100%;
-      background:#00000088;
-      justify-content:center;
-      align-items:center;
+      margin-top:10px;
     }
 
-    #popupBox{
-      background:white;
-      padding:20px;
-      border-radius:10px;
-      width:300px;
+    .spinner{
+      border:4px solid #eee;
+      border-top:4px solid #22c55e;
+      border-radius:50%;
+      width:30px;
+      height:30px;
+      margin:auto;
+      animation:spin 1s linear infinite;
     }
 
-    #popupBox input{
-      width:100%;
-      margin:5px 0;
-      padding:8px;
+    @keyframes spin{
+      0%{ transform:rotate(0deg); }
+      100%{ transform:rotate(360deg); }
     }
   </style>
 </head>
 
 <body>
 
-<div class="header">
-  <h2>Welcome, <span id="username">User</span> 👋</h2>
-  <div>
-    <button onclick="openRequest()" style="background:#22c55e;">Request</button>
-    <button onclick="logout()">Logout</button>
-  </div>
-</div>
-
-<div class="cards">
-  <div class="card"><h4>Total Loan</h4><p id="totalLoan">₹0</p></div>
-  <div class="card"><h4>Total Interest</h4><p id="totalInterest">₹0</p></div>
-  <div class="card"><h4>Pending</h4><p id="pending">₹0</p></div>
-</div>
-
 <div class="box">
-  <h3>Your Details</h3>
-  <p><b>Name:</b> <span id="name">-</span></p>
-  <p><b>Mobile:</b> <span id="mobile"></span></p>
-  <p><b>Head:</b> <span id="head">-</span></p>
-</div>
 
-<div class="box">
-  <h3>Your Loans</h3>
+  <h2 id="title">Login</h2>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Month</th>
-        <th>Amount</th>
-        <th>Type</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="loanTable"></tbody>
-  </table>
-</div>
+  <input id="name" placeholder="Name" style="display:none">
+  <input id="mobile" placeholder="Mobile Number">
+  <input id="head" placeholder="Head of Family" style="display:none">
+  <input type="password" id="pass" placeholder="Password">
+  <input type="password" id="cpass" placeholder="Confirm Password" style="display:none">
 
-<!-- 🔥 REQUEST POPUP -->
-<!-- 🔥 REQUEST POPUP -->
-<div id="popup">
-  <div id="popupBox">
-    <h3>Loan Request</h3>
+  <button id="mainBtn" onclick="submitForm()">Login</button>
 
-    <input id="r_name" placeholder="Name" readonly>
-    <input id="r_mobile" placeholder="Mobile" readonly>
-    <input id="r_head" placeholder="Head of Family" readonly>
-    <input id="r_amount" placeholder="Loan Amount">
-    <input id="r_sname" placeholder="Surety Name">
-    <input id="r_smobile" placeholder="Surety Mobile">
+  <p class="link" onclick="toggle()">Don't have an account? Create one</p>
 
-    <button onclick="submitRequest()" style="background:#22c55e;margin-top:10px;">Submit</button>
-    <button onclick="closeRequest()" style="background:gray;margin-top:10px;">Close</button>
+  <!-- 🔥 LOADING -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Processing...</p>
   </div>
-</div>
 
-<!-- 💰 PAYMENT POPUP (OUTSIDE) -->
-<div id="payPopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#00000088;justify-content:center;align-items:center;">
-  <div id="popupBox">
-    <h3>Pay via Bank Transfer</h3>
-
-    <p><b>Account Name:</b> VALASAREDDY MOHITH KUMAR REDDY</p>
-    <p><b>Account Number:</b> 033325221727314</p>
-    <p><b>IFSC:</b> NESF0000333</p>
-    <p><b>Bank:</b> Slice Small Finance Bank</p>
-    <p><b>Branch:</b> Koramangala, Bangalore</p>
-
-    <hr>
-
-    <p><b>Amount:</b> ₹<span id="payAmount"></span></p>
-
-    <button onclick="copyBank()">Copy</button>
-    <button onclick="payUPI(selectedAmount)" style="background:#22c55e;">UPI</button>
-    <button onclick="closePayPopup()" style="background:gray;">Close</button>
-  </div>
-</div>
 </div>
 
 <script>
-let userData = {};
-// ✅ API
+
+let isLogin = true;
+
 let API = "https://script.google.com/macros/s/AKfycbwdM3SK9_iQGwtjyfoV4yOkqHQBcy7GbQwfMISzgc6aZlUaR04KT7wETTjv6yCZqTrZ/exec";
 
-let mobile = localStorage.getItem("currentUser");
+// 🔄 TOGGLE LOGIN/SIGNUP
+function toggle(){
+  isLogin = !isLogin;
 
-if(!mobile){
-  window.location.href="user.html";
+  document.getElementById("title").innerText = isLogin ? "Login" : "Create Account";
+  document.getElementById("mainBtn").innerText = isLogin ? "Login" : "Create Account";
+
+  document.getElementById("name").style.display = isLogin?"none":"block";
+  document.getElementById("head").style.display = isLogin?"none":"block";
+  document.getElementById("cpass").style.display = isLogin?"none":"block";
 }
 
-document.getElementById("mobile").innerText = mobile;
-
-// 🔥 LOAD USER
-async function loadData(){
-  try{
-    let res = await fetch(`${API}?type=getUser&mobile=${mobile}`);
-    let data = await res.json();
-
-    // store globally
-    userData = data;
-
-    document.getElementById("name").innerText = data.name || "-";
-    document.getElementById("head").innerText = data.head || "-";
-    document.getElementById("username").innerText = data.name || "User";
-
-  }catch(e){
-    alert("Error loading user ❌");
-  }
+// 🔥 LOADING CONTROL
+function showLoading(){
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("mainBtn").disabled = true;
 }
 
-// API
-
-async function fetchLoans(){
-  try{
-    let res = await fetch("https://script.google.com/macros/s/AKfycbzpxTxwbP9KAC7KIYMCzTagAAabllDmCEsjJb1tUTdhYTeDRonF9OdyjYJ9olOXVVa_/exec");
-    let data = await res.json();
-    return data;
-  }catch(e){
-    console.error("API error", e);
-    return [];
-  }
+function hideLoading(){
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("mainBtn").disabled = false;
 }
 
+// 🚀 MAIN FUNCTION
+async function submitForm(){
 
-async function loadLoans(){
+  let mobile = document.getElementById("mobile").value.trim();
+  let pass = document.getElementById("pass").value.trim();
 
-  let res = await fetch(`${API}?type=getRequests&mobile=${mobile}`);
-  let data = await res.json();
-
-  console.log("REQUEST DATA:", data); // debug
-
-  let acceptedLoans = data.filter(r => r.status === "accepted");
-
-  renderLoans(acceptedLoans);
-}
-function renderLoans(loans){
-
-  let table = document.getElementById("loanTable");
-  table.innerHTML = "";
-
-  let totalLoan = 0;
-  let totalInterest = 0;
-  let pending = 0;
-
-  if(loans.length === 0){
-    table.innerHTML = `<tr><td colspan="5">No Loans</td></tr>`;
-    
-    document.getElementById("totalLoan").innerText = "₹0";
-    document.getElementById("totalInterest").innerText = "₹0";
-    document.getElementById("pending").innerText = "₹0";
+  if(!mobile || !pass){
+    alert("Enter all details");
     return;
   }
 
-  loans.forEach((l)=>{
+  // 🔐 LOGIN
+  if(isLogin){
 
-    let amount = Number(l.amount);
-    let interestRate = 2;
+    showLoading();
 
-    let interestAmt = (amount * interestRate)/100;
+    try{
+      let res = await fetch(`${API}?type=login&mobile=${mobile}&pass=${pass}`);
+      let text = await res.text();
 
-    totalLoan += amount;
-    totalInterest += interestAmt;
+      if(text === "success"){
+  localStorage.setItem("currentUser", mobile);
 
-    let months = [
-  {name:"Month 1", amount:interestAmt, type:"Interest"},
-  {name:"Month 2", amount:interestAmt, type:"Interest"},
-  {name:"Month 3", amount:interestAmt + amount, type:"Final + Principal"}
-];
+  // 🔥 small delay add చేయి
+  setTimeout(()=>{
+    window.location.href = "user-dashboard.html";
+  }, 300);
+}else{
+        alert("Invalid Login ❌");
+      }
 
-    months.forEach((m,i)=>{
-
-      pending += m.amount;
-
-      table.innerHTML += `
-        <tr>
-          <td>${m.name}</td>
-          <td>₹${m.amount.toFixed(0)}</td>
-          <td>${m.type}</td>
-          <td class="pending">pending</td>
-          <td><button onclick="openPayPopup(${m.amount})">Pay</button></td>
-        </tr>
-      `;
-    });
-
-  });
-
-  document.getElementById("totalLoan").innerText = "₹"+totalLoan;
-  document.getElementById("totalInterest").innerText = "₹"+totalInterest.toFixed(0);
-  document.getElementById("pending").innerText = "₹"+pending.toFixed(0);
-}
-// 🔥 PAY
-function pay(index){
-  loan.status[index] = "paid";
-  alert("Paid Month " + (index+1) + " ✅");
-  loadLoans();
-}
-
-// 🔥 REQUEST FUNCTIONS
-function openRequest(){
-  document.getElementById("popup").style.display = "flex";
-
-  // 🔥 auto fill from database
-  document.getElementById("r_name").value = userData.name || "";
-  document.getElementById("r_mobile").value = userData.mobile || mobile;
-  document.getElementById("r_head").value = userData.head || "";
-}
-
-function closeRequest(){
-  document.getElementById("popup").style.display = "none";
-}
-
-async function render(){
-
-  let loans = await fetchLoans(); // ✅ API
-
-  let totalGiven=0, totalInterest=0, pending=0, dueToday=0;
-  let totalFund = 93000; // fixed treasury
-  let today = new Date().toISOString().split("T")[0];
-
-  let table = document.getElementById("loanTable");
-  table.innerHTML="";
-
-  loans.forEach(l=>{
-
-    let months = getMonths(l.startDate);
-    let amount = Number(l.amount) || 0;
-    let interest = Number(l.interest) || 0;
-
-    let interestAmt = (amount * interest / 100) * months;
-
-    totalGiven += amount;
-
-    // ✅ only paid interest added
-    if(l.status === "paid"){
-      totalInterest += interestAmt;
-      totalFund += amount + interestAmt;
+    }catch(e){
+      alert("Network error ❌");
     }
 
-    if(l.status==="pending"){
-      pending += amount;
-    }
-
-    if(l.due === today && l.status==="pending"){
-      dueToday++;
-    }
-
-    let rowColor="";
-    if(l.status==="pending" && l.due < today){
-      rowColor="style='background:#fee2e2'";
-    }
-
-    table.innerHTML += `
-      <tr ${rowColor}>
-        <td>${l.name}</td>
-        <td>₹${amount}</td>
-        <td>₹${interestAmt.toFixed(0)}</td>
-        <td>${l.due}</td>
-        <td class="${l.status}">${l.status}</td>
-      </tr>
-    `;
-  });
-
-  // ✅ CARD VALUES
-  document.getElementById("totalFund").innerText="₹"+totalFund.toFixed(0);
-  document.getElementById("totalGiven").innerText="₹"+totalGiven;
-  document.getElementById("totalInterest").innerText="₹"+totalInterest.toFixed(0);
-  document.getElementById("pending").innerText="₹"+pending;
-  document.getElementById("dueToday").innerText=dueToday;
-
-  document.getElementById("alertText").innerText =
-    dueToday>0 ? "⚠️ "+dueToday+" payments due today" : "All good";
-
-  // chart
-  if(window.myChart){
-    window.myChart.destroy();
+    hideLoading();
   }
 
-  window.myChart = new Chart(document.getElementById("chart"),{
-    type:"bar",
-    data:{
-      labels:["Given","Interest","Total"],
-      datasets:[{
-        data:[totalGiven,totalInterest,totalFund],
-        borderRadius:6
-      }]
-    },
-    options:{
-      plugins:{legend:{display:false}}
-    }
-  });
-}
+  // 🆕 SIGNUP
+  else{
 
+    let name = document.getElementById("name").value.trim();
+    let head = document.getElementById("head").value.trim();
+    let cpass = document.getElementById("cpass").value.trim();
 
-async function submitRequest(){
-
-  let name = document.getElementById("r_name").value;
-  let mobileVal = document.getElementById("r_mobile").value;
-  let head = document.getElementById("r_head").value;
-  let amount = document.getElementById("r_amount").value;
-  let sname = document.getElementById("r_sname").value;
-  let smobile = document.getElementById("r_smobile").value;
-
-  if(!name || !amount){
-    alert("Fill all fields ❌");
-    return;
-  }
-
-  try{
-    let url = `${API}?type=request&name=${encodeURIComponent(name)}&mobile=${mobileVal}&head=${encodeURIComponent(head)}&amount=${amount}&sname=${encodeURIComponent(sname)}&smobile=${smobile}`;
-
-    let res = await fetch(url);
-    let text = await res.text();
-
-    if(text === "done"){
-      alert("Request Sent ✅");
-      closeRequest();
-    }else{
-      alert("Error ❌");
+    if(!name || !head){
+      alert("Fill all fields");
+      return;
     }
 
-  }catch(e){
-    alert("Network Error ❌");
+    if(pass !== cpass){
+      alert("Passwords not match ❌");
+      return;
+    }
+
+    showLoading();
+
+    try{
+      let url = `${API}?type=signup&name=${encodeURIComponent(name)}&mobile=${mobile}&head=${encodeURIComponent(head)}&pass=${pass}`;
+
+      let res = await fetch(url);
+      let text = await res.text();
+
+      if(text === "exists"){
+        alert("Account already exists ❌");
+      }else if(text === "created"){
+        alert("Account Created ✅");
+        toggle();
+      }else{
+        alert("Error try again");
+      }
+
+    }catch(e){
+      alert("Network error ❌");
+    }
+
+    hideLoading();
   }
 }
 
-function payUPI(amount){
-
-  let upiID = "9951994651-4@ybl";   // 🔥 your UPI ID
-  let name = "VALASAREDDY MOHITH KUMAR REDDY";
-
-  let upiLink = `upi://pay?pa=${upiID}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR`;
-
-  // 👉 This opens ANY UPI app (GPay / PhonePe / Paytm)
-  window.location.href = upiLink;
-}
-
-
-
-// 🔐 LOGOUT
-function logout(){
-  localStorage.removeItem("currentUser");
-  window.location.href="user.html";
-}
-
-// INIT
-loadData();
-loadLoans();
-
-  
-  let selectedAmount = 0;
-
-function openPayPopup(amount){
-  selectedAmount = amount;
-  document.getElementById("payAmount").innerText = amount;
-  document.getElementById("payPopup").style.display = "flex";
-}
-
-function closePayPopup(){
-  document.getElementById("payPopup").style.display = "none";
-}
-
-function copyBank(){
-  let text = `
-Account Name: VALASAREDDY MOHITH KUMAR REDDY
-Account Number: 033325221727314
-IFSC: NESF0000333
-Bank: Slice Small Finance Bank
-  `;
-  navigator.clipboard.writeText(text);
-  alert("Copied ✅");
-}
-  
 </script>
 
 </body>
