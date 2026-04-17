@@ -114,6 +114,7 @@
 
   <input id="sname" placeholder="Surety Name">
   <input id="smobile" placeholder="Surety Mobile">
+  <input id="date" type="date">
 
   <!-- 🔥 BUTTON -->
   <button id="createBtn" class="btn add" onclick="createLoan()">Create Loan</button>
@@ -178,9 +179,9 @@
   <th>Phone</th>
   <th>Amount</th>
   <th>Interest</th>
-  <th>M1</th>
-  <th>M2</th>
-  <th>M3</th>
+  <th>M1 (Due)</th>
+  <th>M2 (Due)</th>
+  <th>M3 (Due)</th>
   <th>Status</th>
 </tr>
     </thead>
@@ -197,11 +198,13 @@
       <tr>
         <th>#</th>
         <th>Name</th>
-        <th>Mobile</th>
-        <th>Amount</th>
-        <th>Surety</th>
-        <th>Status</th>
-        <th>Action</th>
+	<th>Mobile</th>
+	<th>Amount</th>
+	<th>Surety</th>
+	<th>Status</th>
+	<th>Request Time</th>
+	<th>Approved Time</th>
+	<th>Action</th>
       </tr>
     </thead>
     <tbody id="requestTable"></tbody>
@@ -222,7 +225,7 @@ function hideLoader(){
 }
 
 // 🔥 API
-let API = "https://script.google.com/macros/s/AKfycbzpxTxwbP9KAC7KIYMCzTagAAabllDmCEsjJb1tUTdhYTeDRonF9OdyjYJ9olOXVVa_/exec";
+let API = "https://script.google.com/macros/s/AKfycby2OhqZGkMS44fLT3mC1Ast2fFXRqRiRvk8B7U63DnJWK6C6zYohukWezurzs709TXI/exec";
 
 // 🔐 PROTECT
 if(localStorage.getItem("admin")!=="true"){
@@ -301,7 +304,7 @@ async function loadRequests(){
   table.innerHTML = "";
 
   if(data.length === 0){
-    table.innerHTML = `<tr><td colspan="7">No Requests</td></tr>`;
+    table.innerHTML = `<tr><td colspan="9">No Requests</td></tr>`;
     hideLoader();
     return;
   }
@@ -315,6 +318,11 @@ async function loadRequests(){
         <td>₹${r.amount}</td>
         <td>${r.sname || "-"}</td>
         <td>${r.status}</td>
+
+        <!-- 🔥 NEW -->
+        <td>${r.requestTime}</td>
+        <td>${r.approvedTime}</td>
+
         <td>
           ${
             r.status==="pending"
@@ -331,7 +339,6 @@ async function loadRequests(){
 
   hideLoader();
 }
-
 //////////////////////////////////////////////////////////
 // 📋 RENDER LOANS
 //////////////////////////////////////////////////////////
@@ -357,10 +364,14 @@ async function render(){
 
     let amount = Number(l.amount);
     let interest = Math.round((amount * 2)/100);
+    let startDate = l.approvedTime;
 
     let m1 = l.m1 || "pending";
     let m2 = l.m2 || "pending";
     let m3 = l.m3 || "pending";
+    let m1Date = l.date ? addDays(l.date, 30) : "-";
+    let m2Date = l.date ? addDays(l.date, 60) : "-";
+    let m3Date = l.date ? addDays(l.date, 90) : "-";
 
     let status = (m1==="paid" && m2==="paid" && m3==="paid") ? "completed" : "active";
 
@@ -373,16 +384,19 @@ async function render(){
         <td>₹${interest}</td>
 
         <td class="${m1}">
-          ${m1==="paid" ? "✔ Paid" : `<button onclick="payMonth(${l.row},1)">Pay</button>`}
+        ${m1==="paid" ? "✔ Paid" : `<button onclick="payMonth(${l.row},1)">Pay</button>`}
+        <br><small>${m1Date}</small>
         </td>
 
         <td class="${m2}">
-          ${m2==="paid" ? "✔ Paid" : `<button onclick="payMonth(${l.row},2)">Pay</button>`}
+        ${m2==="paid" ? "✔ Paid" : `<button onclick="payMonth(${l.row},2)">Pay</button>`}
+        <br><small>${m2Date}</small>
         </td>
 
         <td class="${m3}">
-          ${m3==="paid" ? "✔ Paid" : `<button onclick="payMonth(${l.row},3)">Pay</button>`}
-        </td>
+        ${m3==="paid" ? "✔ Paid" : `<button onclick="payMonth(${l.row},3)">Pay</button>`}
+       <br><small>${m3Date}</small>
+       </td>
 
         <td>${status}</td>
       </tr>
@@ -444,19 +458,19 @@ async function createLoan(){
   let amount = document.getElementById("amount").value.trim();
   let sname = document.getElementById("sname").value.trim();
   let smobile = document.getElementById("smobile").value.trim();
+  let date = document.getElementById("date").value || new Date().toISOString().split('T')[0];
+  console.log("DATE:", date);  // 🔥 add this line
 
-  if(!name || !mobile || !head || !amount){
-    alert("Fill all fields ❌");
-    return;
-  }
+  if(!name || !mobile || !head || !amount || !date){
+      alert("Fill all fields including date ❌");
+      return;
+     }
 
   showLoader();
 
   try{
 
-    await fetch(`${API}?type=signup&name=${encodeURIComponent(name)}&mobile=${mobile}&head=${encodeURIComponent(head)}&pass=123456`);
-
-    await fetch(`${API}?type=request&name=${encodeURIComponent(name)}&mobile=${mobile}&head=${encodeURIComponent(head)}&amount=${amount}&sname=${encodeURIComponent(sname)}&smobile=${smobile}`);
+    await fetch(`${API}?type=request&name=${encodeURIComponent(name)}&mobile=${mobile}&head=${encodeURIComponent(head)}&amount=${amount}&sname=${encodeURIComponent(sname)}&smobile=${smobile}&date=${date}`);
 
     let res = await fetch(`${API}?type=getRequests&mobile=all`);
     let data = await res.json();
@@ -495,6 +509,24 @@ window.onload = function(){
   loadRequests();
   render();
   loadStats();
+}
+function addDays(dateStr, days){
+  let d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+function formatDateTime(dateStr){
+  if(!dateStr) return "-";
+
+  let d = new Date(dateStr);
+
+  return d.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 </script>
