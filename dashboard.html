@@ -564,8 +564,55 @@ window.onload=function(){
   }, 3000);
 
 };
-
+function closeNote(){
+  document.getElementById("loginNote").style.display = "none";
+}
 </script>
+<div id="loginNote" style="
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.5);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:999999;
+">
 
+  <div style="
+    background:white;
+    padding:25px;
+    border-radius:15px;
+    max-width:400px;
+    text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+  ">
+
+    <h3 style="margin-bottom:10px;">🔐 Login Info</h3>
+
+    <p style="font-size:14px; color:#555; line-height:1.6;">
+      <b>User Login</b><br><br>
+
+      📱 <b>Login:</b> User Mobile Number<br><br>
+
+      🔑 <b>Password:</b><br>
+      • If loan created by <b>Admin</b> → <b>123456</b><br>
+      • If user created own account → Use <b>your set password</b>
+    </p>
+
+    <button onclick="closeNote()" style="
+      margin-top:15px;
+      padding:10px 20px;
+      border:none;
+      border-radius:8px;
+      background:#3b82f6;
+      color:white;
+      cursor:pointer;
+    ">OK</button>
+
+  </div>
+</div>
 </body>
 </html>
