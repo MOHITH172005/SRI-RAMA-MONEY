@@ -578,24 +578,42 @@ function changeLang(lang){
 
   if(lang === "english"){
 
-    title.innerText = "🔐 Login Information";
+    title.innerText = "🔐 Login & Loan Information";
 
     content.innerHTML = `
-      📱 Login: User Mobile Number <br><br>
-      🔑 Password:<br>
+      📱 <b>Login:</b> User Mobile Number <br><br>
+
+      🔑 <b>Password:</b><br>
       • If created by Admin → 123456 <br>
-      • If created by User → Your set password
+      • If created by User → Your set password <br><br>
+
+      📌 <b>Loan Rules:</b><br>
+      • Priority will be given to those who request money first <br>
+      • Monthly interest must be paid regularly <br>
+      • In 3rd month → Principal + Interest must be paid <br>
+      • After full repayment → Cannot request loan for next 3 months <br>
+      • Surety is mandatory <br>
+      • Loan approval is done by Admin only
     `;
 
   }else{
 
-    title.innerText = "🔐 లాగిన్ సమాచారం";
+    title.innerText = "🔐 లాగిన్ & లోన్ సమాచారం";
 
     content.innerHTML = `
-      📱 లాగిన్: యూజర్ మొబైల్ నంబర్ <br><br>
-      🔑 పాస్‌వర్డ్:<br>
+      📱 <b>లాగిన్:</b> యూజర్ మొబైల్ నంబర్ <br><br>
+
+      🔑 <b>పాస్‌వర్డ్:</b><br>
       • అడ్మిన్ క్రియేట్ చేస్తే → 123456 <br>
-      • యూజర్ స్వయంగా క్రియేట్ చేస్తే → మీరు పెట్టిన పాస్‌వర్డ్
+      • యూజర్ స్వయంగా క్రియేట్ చేస్తే → మీరు పెట్టిన పాస్‌వర్డ్ <br><br>
+
+      📌 <b>లోన్ నిబంధనలు:</b><br>
+      • ముందుగా డబ్బు అడిగిన వారికి మొదటి ప్రాధాన్యత ఉంటుంది <br>
+      • ప్రతి నెల వడ్డీ తప్పనిసరిగా చెల్లించాలి <br>
+      • 3వ నెలలో → ప్రిన్సిపల్ + వడ్డీ మొత్తం చెల్లించాలి <br>
+      • పూర్తి చెల్లింపు చేసిన తరువాత → 3 నెలలు మళ్లీ లోన్ అడగకూడదు <br>
+      • స్యూరిటీ తప్పనిసరి <br>
+      • లోన్ ఆమోదం అడ్మిన్ ద్వారా మాత్రమే జరుగుతుంది
     `;
   }
 }
