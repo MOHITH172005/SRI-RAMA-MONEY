@@ -288,7 +288,7 @@ function goAdmin(){ window.location="admin.html"; }
 function showLoader(){ globalLoader.style.display="flex"; }
 function hideLoader(){ globalLoader.style.display="none"; }
 
-let API="https://script.google.com/macros/s/AKfycby2OhqZGkMS44fLT3mC1Ast2fFXRqRiRvk8B7U63DnJWK6C6zYohukWezurzs709TXI/exec";
+let API="https://script.google.com/macros/s/AKfycbwN294o561goR-ZXb7PnybLqMlC0UZ-E1aeg2_YcvGuwcSbxiWofCa9UbiyXFb7_lvi/exec";
 let GLOBAL_DATA = [];
 
 //////////////////////////////////////////////////////////
@@ -314,53 +314,112 @@ async function fetchData(){
   }
 }
 
+async function sendRequest(){
+
+  let name = document.getElementById("name").value;
+  let mobile = document.getElementById("mobile").value;
+  let amount = document.getElementById("amount").value;
+  let surety = document.getElementById("surety").value;
+
+  if(!name || !mobile || !amount){
+    alert("Please fill all fields ❗");
+    return;
+  }
+
+  try{
+
+    let url = API 
+      + "?type=addRequest"
+      + "&name=" + encodeURIComponent(name)
+      + "&mobile=" + encodeURIComponent(mobile)
+      + "&amount=" + encodeURIComponent(amount)
+      + "&surety=" + encodeURIComponent(surety);
+
+    let res = await fetch(url);
+    let text = await res.text();
+
+    // 🔥 MAIN LOGIC
+    if(text === "blocked"){
+      alert("❌ 3 months complete ayyaka matrame malli loan request cheyagalru");
+    }
+    else if(text === "added"){
+      alert("✅ Loan request successful");
+
+      // 🔄 form reset
+      document.getElementById("name").value = "";
+      document.getElementById("mobile").value = "";
+      document.getElementById("amount").value = "";
+      document.getElementById("surety").value = "";
+    }
+    else{
+      alert("Something went wrong ❌");
+    }
+
+  }catch(e){
+    alert("Server error ❌");
+    console.log(e);
+  }
+}
+
 //////////////////////////////////////////////////////////
 // 📊 LOAD STATS
 //////////////////////////////////////////////////////////
 function loadStats(){
 
-  let TREASURY=93000;
+  let TREASURY = 93000;
   let data = GLOBAL_DATA;
 
+  // ✅ Only accepted loans
   let loans = data.filter(l => 
     (l.status || "").toLowerCase().trim() === "accepted"
   );
 
-  let totalLoans=loans.length;
-  let active=0, completed=0;
-  let totalAmt=0, totalInt=0;
+  let totalLoans = loans.length;
+  let active = 0, completed = 0;
+  let totalAmt = 0, totalInt = 0;
 
-  loans.forEach(l=>{
-    let amount=Number(l.amount||0);
-    let interest=Math.round((amount*2)/100);
+  loans.forEach(l => {
 
-    let m1=l.m1||"pending";
-    let m2=l.m2||"pending";
-    let m3=l.m3||"pending";
+    let amount = Number(l.amount || 0);
+    let interest = Math.round((amount * 2) / 100);
 
-    if(m1==="paid") totalInt+=interest;
-    if(m2==="paid") totalInt+=interest;
-    if(m3==="paid") totalInt+=interest;
+    let m1 = l.m1 || "pending";
+    let m2 = l.m2 || "pending";
+    let m3 = l.m3 || "pending";
 
-    if(m3==="paid") completed++;
-    else{
+    // ✅ Interest calculation (paid మాత్రమే)
+    if(m1 === "paid") totalInt += interest;
+    if(m2 === "paid") totalInt += interest;
+    if(m3 === "paid") totalInt += interest;
+
+    // ✅ Loan status
+    if(m1 === "paid" && m2 === "paid" && m3 === "paid"){
+      completed++;
+    }else{
       active++;
-      totalAmt+=amount;
     }
+
+    // 🔥 IMPORTANT: అన్ని loans amount add అవ్వాలి
+    totalAmt += amount;
+
   });
 
-  let remaining=TREASURY-totalAmt+totalInt;
-  let totalValue=TREASURY+totalInt;
+  // ✅ Better calculation
+  let totalGiven = totalAmt;
+  let totalCollected = totalInt;
 
+  let remaining = TREASURY - totalGiven + totalCollected;
+  let totalValue = TREASURY + totalCollected;
+
+  // ✅ Update UI
   document.getElementById("totalLoans").innerText = totalLoans;
   document.getElementById("activeLoans").innerText = active;
   document.getElementById("completedLoans").innerText = completed;
-  document.getElementById("totalAmount").innerText = "₹"+totalAmt;
-  document.getElementById("totalInterest").innerText = "₹"+totalInt;
-  document.getElementById("remaining").innerText = "₹"+remaining;
-  document.getElementById("totalValue").innerText = "₹"+totalValue;
+  document.getElementById("totalAmount").innerText = "₹" + totalAmt;
+  document.getElementById("totalInterest").innerText = "₹" + totalCollected;
+  document.getElementById("remaining").innerText = "₹" + remaining;
+  document.getElementById("totalValue").innerText = "₹" + totalValue;
 }
-
 //////////////////////////////////////////////////////////
 // 📋 RENDER LOANS
 //////////////////////////////////////////////////////////
@@ -405,6 +464,64 @@ function render(){
   });
 }
 
+
+function canUserRequest(mobile){
+
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1");
+  let data = sheet.getDataRange().getValues();
+
+  let lastLoan = null;
+
+  for(let i = data.length - 1; i > 0; i--){
+    if(data[i][1] == mobile && data[i][4] == "accepted"){
+      lastLoan = data[i];
+      break;
+    }
+  }
+
+  if(!lastLoan) return true;
+
+  let m1 = lastLoan[7];
+  let m2 = lastLoan[8];
+  let m3 = lastLoan[9];
+
+  if(m1 === "paid" && m2 === "paid" && m3 === "paid"){
+
+    let approvedDate = new Date(lastLoan[6]);
+    let now = new Date();
+
+    let diffMonths = (now - approvedDate) / (1000*60*60*24*30);
+
+    if(diffMonths < 3){
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function addRequest(data){
+
+  let allow = canUserRequest(data.mobile);
+
+  if(!allow){
+    return "blocked";
+  }
+
+  let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1");
+
+  sheet.appendRow([
+    data.name,
+    data.mobile,
+    data.amount,
+    data.surety,
+    "pending",
+    new Date(),
+    ""
+  ]);
+
+  return "added";
+}
 //////////////////////////////////////////////////////////
 // 📩 LOAD REQUESTS
 //////////////////////////////////////////////////////////
@@ -470,6 +587,7 @@ async function updateStatus(row,status){
 
   hideLoader();
 }
+
 //////////////////////////////////////////////////////////
 // 📊 PIE CHART (3D EFFECT)
 //////////////////////////////////////////////////////////
