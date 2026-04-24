@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Surety Login</title>
+</head>
+
+<body>
+
+<h2>Surety Login</h2>
+
+<input id="mobile" placeholder="Enter Your Mobile">
+<button onclick="login()">Login</button>
+
+<hr>
+
+<div id="list"></div>
+
+<script>
+
+let API = "https://script.google.com/macros/s/AKfycbwN294o561goR-ZXb7PnybLqMlC0UZ-E1aeg2_YcvGuwcSbxiWofCa9UbiyXFb7_lvi/exec"; // 🔥 change this
+
+async function login(){
+
+  let mobile = document.getElementById("mobile").value;
+
+  if(!mobile){
+    alert("Enter mobile ❌");
+    return;
+  }
+
+  let res = await fetch(`${API}?type=suretyLogin&mobile=${mobile}`);
+  let data = await res.json();
+
+  let div = document.getElementById("list");
+  div.innerHTML = "";
+
+  if(data.length === 0){
+    div.innerHTML = "No Requests Found ❌";
+    return;
+  }
+
+  data.forEach(d=>{
+    div.innerHTML += `
+      <div style="margin:10px;padding:10px;border:1px solid #ccc;">
+        <b>Name:</b> ${d.name}<br>
+        <b>Amount:</b> ₹${d.amount}<br>
+        <b>Status:</b> ${d.status}<br>
+
+        ${
+          d.status === "pending"
+          ? `
+            <button onclick="approve(${d.row})">Accept</button>
+            <button onclick="reject(${d.row})">Reject</button>
+          `
+          : "✔ Already Responded"
+        }
+      </div>
+    `;
+  });
+}
+
+async function approve(row){
+  await fetch(`${API}?type=suretyApprove&row=${row}&action=accepted`);
+  alert("Accepted ✅");
+  login();
+}
+
+async function reject(row){
+  await fetch(`${API}?type=suretyApprove&row=${row}&action=rejected`);
+  alert("Rejected ❌");
+  login();
+}
+
+</script>
+
+</body>
+</html>
