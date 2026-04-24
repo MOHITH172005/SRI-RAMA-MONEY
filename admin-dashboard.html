@@ -225,7 +225,7 @@ function hideLoader(){
 }
 
 // 🔥 API
-let API = "https://script.google.com/macros/s/AKfycby2OhqZGkMS44fLT3mC1Ast2fFXRqRiRvk8B7U63DnJWK6C6zYohukWezurzs709TXI/exec";
+let API = "https://script.google.com/macros/s/AKfycbwN294o561goR-ZXb7PnybLqMlC0UZ-E1aeg2_YcvGuwcSbxiWofCa9UbiyXFb7_lvi/exec";
 
 // 🔐 PROTECT
 if(localStorage.getItem("admin")!=="true"){
@@ -459,33 +459,54 @@ async function createLoan(){
   let sname = document.getElementById("sname").value.trim();
   let smobile = document.getElementById("smobile").value.trim();
   let date = document.getElementById("date").value || new Date().toISOString().split('T')[0];
-  console.log("DATE:", date);  // 🔥 add this line
 
   if(!name || !mobile || !head || !amount || !date){
-      alert("Fill all fields including date ❌");
-      return;
-     }
+    alert("Fill all fields including date ❌");
+    return;
+  }
 
   showLoader();
 
   try{
 
-    await fetch(`${API}?type=request&name=${encodeURIComponent(name)}&mobile=${mobile}&head=${encodeURIComponent(head)}&amount=${amount}&sname=${encodeURIComponent(sname)}&smobile=${smobile}&date=${date}`);
+    // 🔥 STEP 1: request పంపు
+    let res = await fetch(`${API}?type=request&name=${encodeURIComponent(name)}&mobile=${mobile}&head=${encodeURIComponent(head)}&amount=${amount}&sname=${encodeURIComponent(sname)}&smobile=${smobile}&date=${date}`);
+    
+    let text = await res.text();
 
-    let res = await fetch(`${API}?type=getRequests&mobile=all`);
-    let data = await res.json();
-
-    let last = data[data.length-1];
-
-    if(last){
-      await fetch(`${API}?type=updateStatus&row=${last.row}&status=accepted`);
+    // 🔥 STEP 2: UPDATED BLOCK CHECK
+    if(text === "blocked_active"){
+      alert("❌ Already loan undhi (first complete cheyyali)");
+      hideLoader();
+      return;
+    }
+    else if(text === "blocked_time"){
+      alert("❌ 3 months wait cheyyali");
+      hideLoader();
+      return;
     }
 
-    alert("Loan Created ✅");
+    // 🔥 STEP 3: success అయితే accept చేయి
+    if(text === "added"){
 
-    await loadRequests();
-    await render();
-    await loadStats();
+      let res2 = await fetch(`${API}?type=getRequests&mobile=all`);
+      let data = await res2.json();
+
+      let last = data[data.length-1];
+
+      if(last){
+        await fetch(`${API}?type=updateStatus&row=${last.row}&status=accepted`);
+      }
+
+      alert("✅ Loan Created Successfully");
+
+      await loadRequests();
+      await render();
+      await loadStats();
+    }
+    else{
+      alert("Something went wrong ❌");
+    }
 
   }catch(e){
     alert("Error ❌");
@@ -493,7 +514,6 @@ async function createLoan(){
 
   hideLoader();
 }
-
 //////////////////////////////////////////////////////////
 // 🔐 LOGOUT
 //////////////////////////////////////////////////////////
