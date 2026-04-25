@@ -214,7 +214,7 @@
 let userData = {};
 let currentAmount = 0;
 // ✅ API
-let API = "https://script.google.com/macros/s/AKfycbwdM3SK9_iQGwtjyfoV4yOkqHQBcy7GbQwfMISzgc6aZlUaR04KT7wETTjv6yCZqTrZ/exec";
+let API = "https://script.google.com/macros/s/AKfycbwN294o561goR-ZXb7PnybLqMlC0UZ-E1aeg2_YcvGuwcSbxiWofCa9UbiyXFb7_lvi/exec";
 
 let mobile = localStorage.getItem("currentUser");
 
@@ -258,14 +258,37 @@ async function fetchLoans(){
 
 async function loadLoans(){
 
-  let res = await fetch(`${API}?type=getRequests&mobile=${mobile}`);
-  let data = await res.json();
+  try{
 
-  console.log("REQUEST DATA:", data); // debug
+    let res = await fetch(`${API}?type=getRequests&mobile=${mobile}`);
+    let data = await res.json();
 
-  let acceptedLoans = data.filter(r => r.status === "accepted");
+    console.log("REQUEST DATA:", data);
 
-  renderLoans(acceptedLoans);
+    // 🔥 STEP 1: Filter only relevant statuses
+    let filtered = data.filter(r => 
+      r.status === "accepted" || 
+      r.status === "pending_userAgreement"
+    );
+
+    console.log("FILTERED:", filtered);
+
+    if(filtered.length === 0){
+      renderLoans([]);
+      return;
+    }
+
+    // 🔥 STEP 2: Take ONLY latest loan (avoid duplicates)
+    let latestLoan = [ filtered[filtered.length - 1] ];
+
+    console.log("LATEST LOAN:", latestLoan);
+
+    renderLoans(latestLoan);
+
+  }catch(e){
+    console.error("❌ loadLoans error:", e);
+    alert("Error loading loans ❌");
+  }
 }
 function renderLoans(loans){
 
@@ -289,17 +312,34 @@ function renderLoans(loans){
 
     let amount = Number(l.amount);
     let interestRate = 2;
-
     let interestAmt = (amount * interestRate)/100;
 
     totalLoan += amount;
     totalInterest += interestAmt;
 
+    // 🔥 STEP 2: USER AGREEMENT CASE
+    if(l.status === "pending_userAgreement"){
+
+      table.innerHTML += `
+        <tr>
+          <td colspan="5" style="text-align:center;">
+            ⏳ Waiting for your agreement <br><br>
+            <button onclick="acceptAgreement(${l.row})" style="background:#22c55e;">
+              Accept Agreement
+            </button>
+          </td>
+        </tr>
+      `;
+
+      return; // ⛔ skip EMI rows
+    }
+
+    // 🔥 NORMAL EMI TABLE
     let months = [
-  {name:"Month 1", amount:interestAmt, type:"Interest"},
-  {name:"Month 2", amount:interestAmt, type:"Interest"},
-  {name:"Month 3", amount:interestAmt + amount, type:"Final + Principal"}
-];
+      {name:"Month 1", amount:interestAmt, type:"Interest"},
+      {name:"Month 2", amount:interestAmt, type:"Interest"},
+      {name:"Month 3", amount:interestAmt + amount, type:"Final + Principal"}
+    ];
 
     months.forEach((m,i)=>{
 
@@ -322,6 +362,38 @@ function renderLoans(loans){
   document.getElementById("totalInterest").innerText = "₹"+totalInterest.toFixed(0);
   document.getElementById("pending").innerText = "₹"+pending.toFixed(0);
 }
+
+async function acceptAgreement(row){
+
+  console.log("👉 Button clicked");
+  console.log("👉 Row value:", row);
+
+  try{
+
+    let url = `${API}?type=userAgreement&row=${row}`;
+    console.log("👉 API URL:", url);
+
+    let res = await fetch(url);
+
+    console.log("👉 Response status:", res.status);
+
+    let text = await res.text();
+    console.log("👉 API RESPONSE:", text);
+
+    if(text === "done"){
+      alert("Agreement Accepted ✅");
+      await loadLoans(); // refresh
+    }else{
+      alert("Error ❌: " + text);
+    }
+
+  }catch(e){
+    console.error("❌ Fetch Error:", e);
+    alert("Network Error ❌");
+  }
+}
+
+
 // 🔥 PAY
 function pay(index){
   loan.status[index] = "paid";
