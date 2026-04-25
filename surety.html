@@ -2,13 +2,42 @@
 <html>
 <head>
   <title>Surety Login</title>
+  <style>
+    body{
+      font-family: Arial;
+      padding:20px;
+      background:#f4f7fb;
+    }
+    input{
+      padding:10px;
+      margin:5px;
+      border-radius:6px;
+      border:1px solid #ccc;
+    }
+    button{
+      padding:8px 12px;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+      background:#3b82f6;
+      color:white;
+    }
+    .card{
+      background:white;
+      padding:15px;
+      margin-top:10px;
+      border-radius:10px;
+      box-shadow:0 5px 10px rgba(0,0,0,0.05);
+    }
+  </style>
 </head>
 
 <body>
 
 <h2>Surety Login</h2>
 
-<input id="mobile" placeholder="Enter Your Mobile">
+<input id="mobile" placeholder="Surety Mobile">
+<input id="password" placeholder="User Mobile (Password)">
 <button onclick="login()">Login</button>
 
 <hr>
@@ -17,16 +46,26 @@
 
 <script>
 
-let API = "https://script.google.com/macros/s/AKfycbwN294o561goR-ZXb7PnybLqMlC0UZ-E1aeg2_YcvGuwcSbxiWofCa9UbiyXFb7_lvi/exec"; // 🔥 change this
+let API = "https://script.google.com/macros/s/AKfycbwN294o561goR-ZXb7PnybLqMlC0UZ-E1aeg2_YcvGuwcSbxiWofCa9UbiyXFb7_lvi/exec";
 
+let currentMobile = "";
+let currentUserMobile = "";
+
+//////////////////////////////////////////////////////////
+// 🔐 LOGIN
+//////////////////////////////////////////////////////////
 async function login(){
 
-  let mobile = document.getElementById("mobile").value;
+  let mobile = document.getElementById("mobile").value.trim();
+  let password = document.getElementById("password").value.trim();
 
-  if(!mobile){
-    alert("Enter mobile ❌");
+  if(!mobile || !password){
+    alert("Enter all fields ❌");
     return;
   }
+
+  currentMobile = mobile;
+  currentUserMobile = password;
 
   let res = await fetch(`${API}?type=suretyLogin&mobile=${mobile}`);
   let data = await res.json();
@@ -34,41 +73,48 @@ async function login(){
   let div = document.getElementById("list");
   div.innerHTML = "";
 
-  if(data.length === 0){
-    div.innerHTML = "No Requests Found ❌";
+  // 🔥 FILTER (IMPORTANT)
+  let valid = data.filter(d => String(d.userMobile) === String(password));
+
+  if(valid.length === 0){
+    div.innerHTML = "No valid requests ❌";
     return;
   }
 
-  data.forEach(d=>{
+  valid.forEach(d=>{
     div.innerHTML += `
-      <div style="margin:10px;padding:10px;border:1px solid #ccc;">
+      <div class="card">
         <b>Name:</b> ${d.name}<br>
         <b>Amount:</b> ₹${d.amount}<br>
-        <b>Status:</b> ${d.status}<br>
+        <b>Status:</b> ${d.status}<br><br>
 
         ${
-          d.status === "pending"
-          ? `
-            <button onclick="approve(${d.row})">Accept</button>
-            <button onclick="reject(${d.row})">Reject</button>
+          d.suretyStatus !== "accepted"
+          ? `<button onclick="approve(${d.row})">Accept</button>`
+          : `
+            ✔ Accepted<br><br>
+            ${d.pdfLink ? `<a href="${d.pdfLink}" target="_blank">📄 Download Agreement</a>` : "Waiting for final approval"}
           `
-          : "✔ Already Responded"
         }
       </div>
     `;
   });
 }
 
+//////////////////////////////////////////////////////////
+// ✅ APPROVE
+//////////////////////////////////////////////////////////
 async function approve(row){
-  await fetch(`${API}?type=suretyApprove&row=${row}&action=accepted`);
-  alert("Accepted ✅");
-  login();
-}
 
-async function reject(row){
-  await fetch(`${API}?type=suretyApprove&row=${row}&action=rejected`);
-  alert("Rejected ❌");
-  login();
+  let res = await fetch(`${API}?type=suretyApprove&row=${row}`);
+  let text = await res.text();
+
+  if(text === "done"){
+    alert("Surety Accepted ✅");
+    login(); // reload
+  }else{
+    alert("Error ❌");
+  }
 }
 
 </script>
