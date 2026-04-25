@@ -317,21 +317,45 @@ async function loadRequests(){
         <td>${r.mobile}</td>
         <td>₹${r.amount}</td>
         <td>${r.sname || "-"}</td>
-        <td>${r.status}</td>
+        <td>
+  ${
+    r.status === "accepted"
+      ? `<span style="color:green;font-weight:bold;">✔ Approved</span>`
+    : r.status.includes("pending")
+      ? `<span style="color:orange;">⏳ Pending</span>`
+    : `<span style="color:red;">❌ Rejected</span>`
+  }
+</td>
 
-        <!-- 🔥 NEW -->
-        <td>${r.requestTime}</td>
-        <td>${r.approvedTime}</td>
+        <td>${formatDateTime(r.requestTime)}</td>
+        <td>${formatDateTime(r.approvedTime)}</td>
 
         <td>
-          ${
-            r.status==="pending"
-            ? `
-              <button onclick="updateStatus(${r.row},'accepted')" style="background:green;">Accept</button>
-              <button onclick="updateStatus(${r.row},'rejected')" style="background:red;">Reject</button>
-            `
-            : "✔"
-          }
+
+        ${
+          // 🟡 Step 1: Surety Accept
+          r.suretyStatus !== "accepted"
+            ? `<button onclick="approveSurety(${r.row})" style="background:#f59e0b;">Surety Accept</button>`
+
+          // 🔵 Step 2: User Accept
+          : r.userAgreement !== "accepted"
+            ? `<button onclick="userAccept(${r.row})" style="background:#3b82f6;">User Accept</button>`
+
+          // 🟣 Step 3: Final Surety Accept (🔥 YOUR BUTTON)
+          : r.suretyFinal !== "accepted"
+            ? `<button onclick="suretyFinal(${r.row})" style="background:#8b5cf6;">Final Surety Accept</button>`
+
+          // 🟢 Step 4: Admin Final Approve
+          : r.status !== "accepted"
+            ? `<button onclick="finalApprove(${r.row})" style="background:#22c55e;">Final Approve</button>`
+
+          // ✅ Done
+          : `
+  <span style="color:green;">✔ Completed</span><br>
+  ${r.pdfLink ? `<a href="${r.pdfLink}" target="_blank">📄 View PDF</a>` : ""}
+`
+        }
+
         </td>
       </tr>
     `;
@@ -339,6 +363,87 @@ async function loadRequests(){
 
   hideLoader();
 }
+async function approveSurety(row){
+
+  // 🔥 prevent double click
+  if(event && event.target){
+    event.target.disabled = true;
+    event.target.innerText = "Processing...";
+  }
+
+  showLoader();
+
+  try{
+
+    let res = await fetch(`${API}?type=suretyApprove&row=${row}`);
+    let text = await res.text();
+
+    if(text === "done"){
+      alert("Surety Approved ✅");
+
+      await loadRequests(); // refresh table
+    }else{
+      alert("Error ❌");
+    }
+
+  }catch(err){
+    alert("Network Error ❌");
+  }
+
+  hideLoader();
+}
+async function userAccept(row){
+
+  showLoader();
+
+  let res = await fetch(`${API}?type=userAgreement&row=${row}`);
+  let text = await res.text();
+
+  if(text === "done"){
+    alert("User Accepted ✅");
+    loadRequests();
+  }else{
+    alert("Error ❌");
+  }
+
+  hideLoader();
+}
+async function suretyFinal(row){
+
+  showLoader();
+
+  let res = await fetch(`${API}?type=suretyFinal&row=${row}`);
+  let text = await res.text();
+
+  if(text === "done"){
+    alert("Surety Final Approved ✅");
+    loadRequests();
+  }else{
+    alert("User accept first ❌");
+  }
+
+  hideLoader();
+}
+async function finalApprove(row){
+
+  showLoader();
+
+  let res = await fetch(`${API}?type=updateStatus&row=${row}&status=accepted`);
+  let text = await res.text();
+
+  if(text === "updated"){
+    alert("Loan Approved + PDF Generated ✅");
+
+    loadRequests();
+    render();
+    loadStats();
+  }else{
+    alert("All steps complete kaaledu ❌");
+  }
+
+  hideLoader();
+}
+
 //////////////////////////////////////////////////////////
 // 📋 RENDER LOANS
 //////////////////////////////////////////////////////////
@@ -469,12 +574,23 @@ async function createLoan(){
 
   try{
 
-    // 🔥 STEP 1: request పంపు
-    let res = await fetch(`${API}?type=request&name=${encodeURIComponent(name)}&mobile=${mobile}&head=${encodeURIComponent(head)}&amount=${amount}&sname=${encodeURIComponent(sname)}&smobile=${smobile}&date=${date}`);
-    
+    // 🔥 FIXED URL (NO multiline ❌)
+    let url = `${API}?type=request`
+      + `&name=${encodeURIComponent(name)}`
+      + `&mobile=${mobile}`
+      + `&head=${encodeURIComponent(head)}`
+      + `&amount=${amount}`
+      + `&sname=${encodeURIComponent(sname)}`
+      + `&smobile=${smobile}`
+      + `&date=${date}`
+      + `&status=pending_user`;
+
+    let res = await fetch(url);
     let text = await res.text();
 
-    // 🔥 STEP 2: UPDATED BLOCK CHECK
+    console.log("API RESPONSE:", text); // 🔥 DEBUG
+
+    // 🔥 BLOCK CONDITIONS
     if(text === "blocked_active"){
       alert("❌ Already loan undhi (first complete cheyyali)");
       hideLoader();
@@ -486,30 +602,18 @@ async function createLoan(){
       return;
     }
 
-    // 🔥 STEP 3: success అయితే accept చేయి
+    // 🔥 SUCCESS
     if(text === "added"){
-
-      let res2 = await fetch(`${API}?type=getRequests&mobile=all`);
-      let data = await res2.json();
-
-      let last = data[data.length-1];
-
-      if(last){
-        await fetch(`${API}?type=updateStatus&row=${last.row}&status=accepted`);
-      }
-
-      alert("✅ Loan Created Successfully");
-
+      alert("✅ Loan Created\n⏳ Waiting for User & Surety Approval");
       await loadRequests();
-      await render();
-      await loadStats();
     }
     else{
-      alert("Something went wrong ❌");
+      alert("Something went wrong ❌\n" + text);
     }
 
   }catch(e){
-    alert("Error ❌");
+    console.error(e);
+    alert("Network Error ❌");
   }
 
   hideLoader();
