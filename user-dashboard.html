@@ -506,29 +506,43 @@ async function submitRequest(){
   let sname = document.getElementById("r_sname").value;
   let smobile = document.getElementById("r_smobile").value;
 
-  if(!name || !amount){
+  if(!name || !amount || !sname || !smobile){
     alert("Fill all fields ❌");
     return;
   }
 
   try{
+
+    // ✅ SINGLE LINE URL (IMPORTANT)
     let url = `${API}?type=request&name=${encodeURIComponent(name)}&mobile=${mobileVal}&head=${encodeURIComponent(head)}&amount=${amount}&sname=${encodeURIComponent(sname)}&smobile=${smobile}`;
+
+    console.log("URL:", url);
 
     let res = await fetch(url);
     let text = await res.text();
 
-    if(text === "done"){
-      alert("Request Sent ✅");
+    console.log("RESPONSE:", text);
+
+    if(text === "added"){
+      alert("✅ Request Sent Successfully");
       closeRequest();
-    }else{
-      alert("Error ❌");
+      loadLoans();
+    }
+    else if(text === "blocked_active"){
+      alert("❌ Already active loan undhi");
+    }
+    else if(text === "blocked_time"){
+      alert("❌ 3 months wait cheyyali");
+    }
+    else{
+      alert("❌ Error: " + text);
     }
 
   }catch(e){
+    console.error(e);
     alert("Network Error ❌");
   }
 }
-
 function payUPI(amount){
   currentAmount = amount;
   document.getElementById("paymentPopup").style.display = "flex";
