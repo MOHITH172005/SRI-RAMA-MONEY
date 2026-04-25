@@ -210,9 +210,15 @@ canvas{
 <div class="header">
   <div>
     <button class="btn add" onclick="goUser()">User Login</button>
+
     <button class="btn" style="background:#6366f1;" onclick="goAdmin()">Admin Login</button>
+
+    <!-- 🔥 NEW SURETY BUTTON -->
+    <button class="btn" style="background:#f59e0b;" onclick="goSurety()">
+      Surety Login
+    </button>
   </div>
-  </div>
+</div>
 
 <div class="container">
 
@@ -669,6 +675,10 @@ function loadChart(){
 function logout(){
   localStorage.removeItem("admin");
   window.location="dashboard.html";
+}
+
+function goSurety(){
+  window.location = "surety.html";
 }
 
 //////////////////////////////////////////////////////////
